@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <errno.h>
 
 void die(char* s)
 {
@@ -27,12 +28,17 @@ int main()
 
     if((msqid = msgget(key, 0666))< 0)
         die("msgget()");
-
-    for(int i=0; i < 101; i++){
-        if(msgrcv(msqid, &rcvbuffer, 128, i, IPC_NOWAIT) < 0)
-            die("msgrcv");
-        printf("%s\n", rcvbuffer.mtext);
+    for (int i = 1; i <= 10; i += 2) {
+        while (1) {
+            if (msgrcv(msqid, &rcvbuffer, 128, i, IPC_NOWAIT) < 0) {
+                if (errno == ENOMSG) {
+                    break;
+                } else {
+                    die("msgrcv");
+                }
+            }
+            printf("%s\n", rcvbuffer.mtext);
+        }
     }
-
-    exit(1);
+    exit(0);
 }

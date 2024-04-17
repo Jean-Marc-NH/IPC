@@ -3,11 +3,12 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <errno.h>
 
-void die(char* s, int i)
+void die(char* s)
 {
     perror(s);
-    i = 200;
+    exit(1);
 }
 
 
@@ -19,23 +20,24 @@ struct msgbuf
 
 int main()
 {
-    for(;;)
-    {
-            int msqid;
+    int msqid;
     key_t key;
     struct msgbuf rcvbuffer;
 
     key = 4321;
 
     if((msqid = msgget(key, 0606))< 0)
-        die("msgget()", 0);
+        die("msgget()");
 
-    for(int i=0; i < 101; i++){
-        if(msgrcv(msqid, &rcvbuffer, 128, i, IPC_NOWAIT) < 0)
-            die("msgrcv", i);
+    while (1) {
+        if (msgrcv(msqid, &rcvbuffer, 128, 0, IPC_NOWAIT) < 0) {
+            if (errno == ENOMSG) {
+                break;
+            } else {
+                die("msgrcv");
+            }
+        }
         printf("%s\n", rcvbuffer.mtext);
     }
-    }
-
-    exit(1);
+    exit(0);
 }
